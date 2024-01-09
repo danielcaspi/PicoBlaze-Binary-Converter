@@ -1,0 +1,63 @@
+                 CONSTANT thedelay, 0E
+                 ; for_k -> 2x
+                 ;   for_j -> x(2x+3)
+                 ;    for_i -> x(3+x(2x+3)) ~ 3x+x^2*(2x+3) ~ 3x+2x^3+3x^2 = 2x^3+3x^2+3x
+                 ;     ~ 2x^3
+                 ; (2x^3)[instructions] * 2[cycles/instruction] = 2000000
+                 ; x^3=500000
+                 ; x~80
+                 CONSTANT numOfSamples, 14
+                 ;myport_in          DSIN     2
+                 ;myport_out          DSOUT     1
+                 NAMEREG s0, loopCounter
+                 NAMEREG s1, inReg
+                 NAMEREG s2, compReg
+                 NAMEREG s3, delay_i
+                 NAMEREG s4, delay_j
+                 NAMEREG s5, delay_k
+           init: 
+          start: 
+                 CALL debounce
+                 CALL output0
+                 JUMP start
+          delay: 
+                 LOAD delay_i, 00
+          for_i: 
+                 LOAD delay_j, 00
+          for_j: 
+                 LOAD delay_k, 00
+          for_k: 
+                 ADD delay_k, 01
+                 COMPARE delay_k, thedelay
+                 JUMP NZ, for_k
+                 ADD delay_j, 01
+                 COMPARE delay_j, thedelay
+                 JUMP NZ, for_j
+                 ADD delay_i, 01
+                 COMPARE delay_i, thedelay
+                 JUMP NZ, for_i
+                 RETURN 
+       debounce: 
+                 ;reading 20 times the input and delay at each iteration
+                 LOAD loopCounter, 00
+   read_in_loop: 
+                 CALL input0
+                 CALL delay
+                 ADD loopCounter, 01
+                 COMPARE loopCounter, numOfSamples
+                 JUMP NZ, read_in_loop
+                 LOAD loopCounter, 00
+comparison_loop: 
+                 FETCH compReg, (loopCounter)
+                 COMPARE compReg, inReg
+                 JUMP NZ, start
+                 ADD loopCounter, 01
+                 COMPARE loopCounter, numOfSamples
+                 JUMP NZ, comparison_loop
+                 RETURN 
+         input0: 
+                 INPUT inReg, 02
+                 STORE inReg, (loopCounter)
+                 RETURN 
+        output0: 
+                 OUTPUT inReg, 01

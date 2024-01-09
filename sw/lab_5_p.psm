@@ -1,0 +1,74 @@
+
+
+CONSTANT thedelay            ,      80
+; for_k -> 2x
+; for_j -> x(2x+3)
+; 	  for_i -> x(3+x(2x+3)) ~ 3x+x^2*(2x+3) ~ 3x+2x^3+3x^2 = 2x^3+3x^2+3x
+; ~ 2x^3
+; (2x^3)[instructions] * 2[cycles/instruction] = 2000000
+; x^3=500000
+; x~80
+
+CONSTANT numOfSamples        ,       20
+myport_in          DSIN     2
+myport_out          DSOUT     1
+
+loopCounter         EQU       s0
+inReg               EQU       s1
+compReg             EQU       s2
+delay_i             EQU       s3
+delay_j             EQU       s4
+delay_k             EQU       s5
+
+init: 
+
+start: 
+                    CALL      debounce
+                    CALL      output0
+                    JUMP      start
+
+delay: 
+                    LOAD      delay_i, 0
+for_i: 
+                    LOAD      delay_j, 0
+for_j: 
+                    LOAD      delay_k, 0
+for_k: 
+                    ADD       delay_k, 1
+                    COMP      delay_k, thedelay
+                    JUMP      NZ, for_k
+                    ADD       delay_j, 1
+                    COMP      delay_j, thedelay
+                    JUMP      NZ, for_j
+                    ADD       delay_i, 1
+                    COMP      delay_i, thedelay
+                    JUMP      NZ, for_i
+                    RET       
+
+debounce: 
+; reading 20 times the input and delay at each iteration
+                    LOAD      loopCounter, 0
+read_in_loop: 
+                    CALL      input0
+                    CALL      delay
+                    ADD       loopCounter, 1
+                    COMP      loopCounter, numOfSamples
+                    JUMP      NZ, read_in_loop
+
+                    LOAD      loopCounter, 0
+comparison_loop: 
+                    FETCH     compReg, loopCounter
+                    COMP      compReg, inReg
+                    JUMP      NZ, start
+                    ADD       loopCounter, 1
+                    COMP      loopCounter, numOfSamples
+                    JUMP      NZ, comparison_loop
+                    RET       
+
+input0: 
+                    IN        inReg, 2
+                    STORE     inReg, loopCounter
+                    RET       
+
+output0: 
+                    OUT       inReg, 1
